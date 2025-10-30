@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { FiHome, FiUsers, FiGrid, FiLogOut, FiSearch, FiFileText, FiDownload, FiClock } from 'react-icons/fi';
+import { FiUsers, FiGrid, FiLogOut, FiSearch, FiFileText, FiDownload, FiClock } from 'react-icons/fi';
 import { RoleName } from '../types/index';
 
 interface LayoutProps {

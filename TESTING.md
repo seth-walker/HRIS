@@ -260,8 +260,8 @@ describe('Layout', () => {
       </BrowserRouter>
     );
 
-    expect(screen.getByText('Dashboard')).toBeInTheDocument();
     expect(screen.getByText('Employees')).toBeInTheDocument();
+    expect(screen.getByText('Teams')).toBeInTheDocument();
   });
 });
 ```

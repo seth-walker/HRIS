@@ -34,7 +34,6 @@ describe('Layout Component', () => {
 
   it('renders navigation items', () => {
     renderLayout();
-    expect(screen.getByText('Dashboard')).toBeInTheDocument();
     expect(screen.getByText('Employees')).toBeInTheDocument();
     expect(screen.getByText('Teams')).toBeInTheDocument();
     expect(screen.getByText('Org Chart')).toBeInTheDocument();
