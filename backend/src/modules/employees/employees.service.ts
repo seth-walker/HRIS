@@ -150,7 +150,11 @@ export class EmployeesService {
     updateEmployeeDto: UpdateEmployeeDto,
     user: any,
   ): Promise<Employee> {
+    console.log('📝 Update DTO received:', JSON.stringify(updateEmployeeDto, null, 2));
+    console.log('📝 Manager ID in DTO:', updateEmployeeDto.managerId);
+
     const employee = await this.findOne(id, user);
+    console.log('📝 Current employee managerId:', employee.managerId);
 
     // Managers can only update their direct reports
     if (user.role.name === RoleName.MANAGER) {
@@ -163,8 +167,22 @@ export class EmployeesService {
     }
 
     const oldData = { ...employee };
+
+    // If managerId is being updated, clear the manager relation to prevent TypeORM from using it
+    if ('managerId' in updateEmployeeDto) {
+      delete employee.manager;
+    }
+
+    // If teamId is being updated, clear the team relation to prevent TypeORM from using it
+    if ('teamId' in updateEmployeeDto) {
+      delete employee.team;
+    }
+
     Object.assign(employee, updateEmployeeDto);
+    console.log('📝 Employee after assign, managerId:', employee.managerId);
+
     const updatedEmployee = await this.employeesRepository.save(employee);
+    console.log('📝 Saved employee managerId:', updatedEmployee.managerId);
 
     await this.createAuditLog(user.id, AuditAction.UPDATE, id, {
       old: oldData,
