@@ -53,11 +53,17 @@ export class ImportExportController {
   async exportEmployeesExcel(
     @Query('department') department?: string,
     @Query('status') status?: string,
+    @Query('teamId') teamId?: string,
+    @Query('managerId') managerId?: string,
+    @Query('title') title?: string,
     @Res() res?: Response,
   ) {
     const buffer = await this.importExportService.exportEmployeesToExcel({
       department,
       status,
+      teamId,
+      managerId,
+      title,
     });
 
     res.setHeader(
@@ -106,11 +112,17 @@ export class ImportExportController {
   async exportEmployeesPDF(
     @Query('department') department?: string,
     @Query('status') status?: string,
+    @Query('teamId') teamId?: string,
+    @Query('managerId') managerId?: string,
+    @Query('title') title?: string,
     @Res() res?: Response,
   ) {
     const buffer = await this.importExportService.exportEmployeeListToPDF({
       department,
       status,
+      teamId,
+      managerId,
+      title,
     });
 
     res.setHeader('Content-Type', 'application/pdf');

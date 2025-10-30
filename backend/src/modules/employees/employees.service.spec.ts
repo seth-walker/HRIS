@@ -179,7 +179,10 @@ describe('EmployeesService', () => {
 
       mockEmployeeRepository.create.mockReturnValue(mockEmployee);
       mockEmployeeRepository.save.mockResolvedValue(mockEmployee);
-      mockEmployeeRepository.findOne.mockResolvedValue(mockEmployee);
+      // First call (email uniqueness check) returns null, second call returns the employee
+      mockEmployeeRepository.findOne
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(mockEmployee);
       mockAuditLogRepository.create.mockReturnValue({});
       mockAuditLogRepository.save.mockResolvedValue({});
 

@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
 import { importExportService } from '../services/import-export.service';
-import { FiDownload, FiUpload, FiFileText, FiFile } from 'react-icons/fi';
+import { employeeService } from '../services/employee.service';
+import { teamService } from '../services/team.service';
+import { FiDownload, FiUpload, FiFileText, FiFile, FiFilter, FiChevronDown, FiChevronUp, FiX } from 'react-icons/fi';
 import { RoleName } from '../types/index';
 
 const ImportExport: React.FC = () => {
@@ -9,8 +12,68 @@ const ImportExport: React.FC = () => {
   const [isImporting, setIsImporting] = useState(false);
   const [importResult, setImportResult] = useState<{ success: number; errors: any[] } | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
+
+  // Export filter states
+  const [exportFilters, setExportFilters] = useState({
+    department: '',
+    status: '',
+    teamId: '',
+    managerId: '',
+    title: '',
+  });
 
   const canImportExport = user?.role.name === RoleName.ADMIN || user?.role.name === RoleName.HR;
+
+  // Fetch all teams for filter dropdown
+  const { data: allTeams } = useQuery({
+    queryKey: ['teams-all'],
+    queryFn: () => teamService.getAll(''),
+  });
+
+  // Fetch all managers for filter dropdown
+  const { data: allManagers } = useQuery({
+    queryKey: ['managers-all'],
+    queryFn: () => employeeService.getAll({}),
+    select: (data) => {
+      // Filter to only employees who have direct reports
+      const managersSet = new Set<string>();
+      data.forEach(emp => {
+        if (emp.managerId) managersSet.add(emp.managerId);
+      });
+      return data.filter(emp => managersSet.has(emp.id));
+    },
+  });
+
+  // Get unique departments from all employees for filter dropdown
+  const departments = React.useMemo(() => {
+    if (!allManagers) return [];
+    const depts = new Set<string>();
+    allManagers.forEach(emp => {
+      if (emp.department) depts.add(emp.department);
+    });
+    return Array.from(depts).sort();
+  }, [allManagers]);
+
+  // Count active filters
+  const activeFilterCount = [
+    exportFilters.department,
+    exportFilters.status,
+    exportFilters.teamId,
+    exportFilters.managerId,
+    exportFilters.title,
+  ].filter(Boolean).length;
+
+  // Helper to clear all filters
+  const clearExportFilters = () => {
+    setExportFilters({
+      department: '',
+      status: '',
+      teamId: '',
+      managerId: '',
+      title: '',
+    });
+  };
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -47,7 +110,14 @@ const ImportExport: React.FC = () => {
 
   const handleExportEmployeesExcel = async () => {
     try {
-      await importExportService.exportEmployeesExcel();
+      const filters: any = {};
+      if (exportFilters.department) filters.department = exportFilters.department;
+      if (exportFilters.status) filters.status = exportFilters.status;
+      if (exportFilters.teamId) filters.teamId = exportFilters.teamId;
+      if (exportFilters.managerId) filters.managerId = exportFilters.managerId;
+      if (exportFilters.title) filters.title = exportFilters.title;
+
+      await importExportService.exportEmployeesExcel(filters);
     } catch (error: any) {
       alert('Export failed: ' + (error.response?.data?.message || error.message));
     }
@@ -63,7 +133,14 @@ const ImportExport: React.FC = () => {
 
   const handleExportEmployeesPDF = async () => {
     try {
-      await importExportService.exportEmployeesPDF();
+      const filters: any = {};
+      if (exportFilters.department) filters.department = exportFilters.department;
+      if (exportFilters.status) filters.status = exportFilters.status;
+      if (exportFilters.teamId) filters.teamId = exportFilters.teamId;
+      if (exportFilters.managerId) filters.managerId = exportFilters.managerId;
+      if (exportFilters.title) filters.title = exportFilters.title;
+
+      await importExportService.exportEmployeesPDF(filters);
     } catch (error: any) {
       alert('Export failed: ' + (error.response?.data?.message || error.message));
     }
@@ -182,6 +259,190 @@ const ImportExport: React.FC = () => {
             <h2 className="text-xl font-semibold text-gray-900">Export Data</h2>
           </div>
 
+          {/* Export Filters */}
+          <div className="mb-4">
+            <div className="flex items-center justify-between mb-2">
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className="flex items-center space-x-2 text-sm text-gray-700 hover:text-gray-900"
+              >
+                <FiFilter className="h-4 w-4" />
+                <span>Export Filters</span>
+                {activeFilterCount > 0 && (
+                  <span className="bg-blue-100 text-blue-700 text-xs font-medium px-2 py-0.5 rounded-full">
+                    {activeFilterCount}
+                  </span>
+                )}
+                {showFilters ? <FiChevronUp className="h-4 w-4" /> : <FiChevronDown className="h-4 w-4" />}
+              </button>
+
+              {activeFilterCount > 0 && (
+                <button
+                  onClick={clearExportFilters}
+                  className="text-sm text-blue-600 hover:text-blue-800"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+
+            {showFilters && (
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 space-y-3">
+                <div className="grid grid-cols-1 gap-3">
+                  {/* Department Filter */}
+                  <div>
+                    <label htmlFor="export-department" className="block text-xs font-medium text-gray-700 mb-1">
+                      Department
+                    </label>
+                    <select
+                      id="export-department"
+                      value={exportFilters.department}
+                      onChange={(e) => setExportFilters({ ...exportFilters, department: e.target.value })}
+                      className="block w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value="">All Departments</option>
+                      {departments.map((dept) => (
+                        <option key={dept} value={dept}>{dept}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Status Filter */}
+                  <div>
+                    <label htmlFor="export-status" className="block text-xs font-medium text-gray-700 mb-1">
+                      Status
+                    </label>
+                    <select
+                      id="export-status"
+                      value={exportFilters.status}
+                      onChange={(e) => setExportFilters({ ...exportFilters, status: e.target.value })}
+                      className="block w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value="">All Statuses</option>
+                      <option value="active">Active</option>
+                      <option value="on_leave">On Leave</option>
+                      <option value="terminated">Terminated</option>
+                    </select>
+                  </div>
+
+                  {/* Team Filter */}
+                  <div>
+                    <label htmlFor="export-team" className="block text-xs font-medium text-gray-700 mb-1">
+                      Team
+                    </label>
+                    <select
+                      id="export-team"
+                      value={exportFilters.teamId}
+                      onChange={(e) => setExportFilters({ ...exportFilters, teamId: e.target.value })}
+                      className="block w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value="">All Teams</option>
+                      {allTeams?.map((team) => (
+                        <option key={team.id} value={team.id}>{team.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Manager Filter */}
+                  <div>
+                    <label htmlFor="export-manager" className="block text-xs font-medium text-gray-700 mb-1">
+                      Manager
+                    </label>
+                    <select
+                      id="export-manager"
+                      value={exportFilters.managerId}
+                      onChange={(e) => setExportFilters({ ...exportFilters, managerId: e.target.value })}
+                      className="block w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value="">All Managers</option>
+                      {allManagers?.map((manager) => (
+                        <option key={manager.id} value={manager.id}>
+                          {manager.firstName} {manager.lastName}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Title Filter */}
+                  <div>
+                    <label htmlFor="export-title" className="block text-xs font-medium text-gray-700 mb-1">
+                      Title (contains)
+                    </label>
+                    <input
+                      id="export-title"
+                      type="text"
+                      value={exportFilters.title}
+                      onChange={(e) => setExportFilters({ ...exportFilters, title: e.target.value })}
+                      placeholder="e.g. Engineer"
+                      className="block w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                </div>
+
+                {/* Active Filters Display */}
+                {activeFilterCount > 0 && (
+                  <div className="flex flex-wrap gap-1 pt-2 border-t border-gray-200">
+                    {exportFilters.department && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                        {exportFilters.department}
+                        <button
+                          onClick={() => setExportFilters({ ...exportFilters, department: '' })}
+                          className="ml-1 hover:text-blue-900"
+                        >
+                          <FiX className="h-3 w-3" />
+                        </button>
+                      </span>
+                    )}
+                    {exportFilters.status && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                        {exportFilters.status}
+                        <button
+                          onClick={() => setExportFilters({ ...exportFilters, status: '' })}
+                          className="ml-1 hover:text-blue-900"
+                        >
+                          <FiX className="h-3 w-3" />
+                        </button>
+                      </span>
+                    )}
+                    {exportFilters.teamId && allTeams && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                        {allTeams.find(t => t.id === exportFilters.teamId)?.name}
+                        <button
+                          onClick={() => setExportFilters({ ...exportFilters, teamId: '' })}
+                          className="ml-1 hover:text-blue-900"
+                        >
+                          <FiX className="h-3 w-3" />
+                        </button>
+                      </span>
+                    )}
+                    {exportFilters.managerId && allManagers && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                        {allManagers.find(m => m.id === exportFilters.managerId)?.firstName} {allManagers.find(m => m.id === exportFilters.managerId)?.lastName}
+                        <button
+                          onClick={() => setExportFilters({ ...exportFilters, managerId: '' })}
+                          className="ml-1 hover:text-blue-900"
+                        >
+                          <FiX className="h-3 w-3" />
+                        </button>
+                      </span>
+                    )}
+                    {exportFilters.title && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                        Title: {exportFilters.title}
+                        <button
+                          onClick={() => setExportFilters({ ...exportFilters, title: '' })}
+                          className="ml-1 hover:text-blue-900"
+                        >
+                          <FiX className="h-3 w-3" />
+                        </button>
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
           <div className="space-y-3">
             <div>
               <h3 className="text-sm font-medium text-gray-700 mb-2">Employee Data</h3>
@@ -243,7 +504,7 @@ const ImportExport: React.FC = () => {
             <ul className="text-xs text-blue-700 space-y-1 list-disc list-inside">
               <li>Excel files are best for data analysis and further processing</li>
               <li>PDF files are ideal for printing and sharing reports</li>
-              <li>All exports respect your current filter settings</li>
+              <li>All employee exports respect your filter settings above</li>
             </ul>
           </div>
         </div>

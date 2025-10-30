@@ -155,16 +155,32 @@ export class ImportExportService {
     };
     worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
 
-    // Get employees
-    const where: any = {};
-    if (filters?.department) where.department = filters.department;
-    if (filters?.status) where.status = filters.status;
+    // Build query with filters using QueryBuilder
+    const queryBuilder = this.employeesRepository
+      .createQueryBuilder('employee')
+      .leftJoinAndSelect('employee.manager', 'manager')
+      .leftJoinAndSelect('employee.team', 'team');
 
-    const employees = await this.employeesRepository.find({
-      where,
-      relations: ['manager', 'team'],
-      order: { lastName: 'ASC' },
-    });
+    // Apply filters
+    if (filters?.department) {
+      queryBuilder.andWhere('employee.department = :department', { department: filters.department });
+    }
+    if (filters?.status) {
+      queryBuilder.andWhere('employee.status = :status', { status: filters.status });
+    }
+    if (filters?.teamId) {
+      queryBuilder.andWhere('employee.teamId = :teamId', { teamId: filters.teamId });
+    }
+    if (filters?.managerId) {
+      queryBuilder.andWhere('employee.managerId = :managerId', { managerId: filters.managerId });
+    }
+    if (filters?.title) {
+      queryBuilder.andWhere('employee.title ILIKE :title', { title: `%${filters.title}%` });
+    }
+
+    queryBuilder.orderBy('employee.lastName', 'ASC');
+
+    const employees = await queryBuilder.getMany();
 
     // Add data rows
     employees.forEach((employee) => {
@@ -354,16 +370,32 @@ export class ImportExportService {
       });
       doc.moveDown();
 
-      // Get employees
-      const where: any = {};
-      if (filters?.department) where.department = filters.department;
-      if (filters?.status) where.status = filters.status;
+      // Build query with filters using QueryBuilder
+      const queryBuilder = this.employeesRepository
+        .createQueryBuilder('employee')
+        .leftJoinAndSelect('employee.manager', 'manager')
+        .leftJoinAndSelect('employee.team', 'team');
 
-      const employees = await this.employeesRepository.find({
-        where,
-        relations: ['manager', 'team'],
-        order: { lastName: 'ASC' },
-      });
+      // Apply filters
+      if (filters?.department) {
+        queryBuilder.andWhere('employee.department = :department', { department: filters.department });
+      }
+      if (filters?.status) {
+        queryBuilder.andWhere('employee.status = :status', { status: filters.status });
+      }
+      if (filters?.teamId) {
+        queryBuilder.andWhere('employee.teamId = :teamId', { teamId: filters.teamId });
+      }
+      if (filters?.managerId) {
+        queryBuilder.andWhere('employee.managerId = :managerId', { managerId: filters.managerId });
+      }
+      if (filters?.title) {
+        queryBuilder.andWhere('employee.title ILIKE :title', { title: `%${filters.title}%` });
+      }
+
+      queryBuilder.orderBy('employee.lastName', 'ASC');
+
+      const employees = await queryBuilder.getMany();
 
       // Table header
       const tableTop = doc.y;

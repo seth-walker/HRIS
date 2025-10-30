@@ -7,6 +7,10 @@ export const employeeService = {
     status?: string;
     title?: string;
     search?: string;
+    teamId?: string;
+    managerId?: string;
+    sortBy?: string;
+    sortOrder?: 'ASC' | 'DESC';
   }): Promise<Employee[]> {
     const response = await api.get<Employee[]>('/employees', { params: filters });
     return response.data;

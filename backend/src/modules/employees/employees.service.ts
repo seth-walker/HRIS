@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, ConflictException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like, ILike, In } from 'typeorm';
 import { Employee } from '../../entities/employee.entity';
@@ -30,6 +30,60 @@ export class EmployeesService {
       changes,
     });
     await this.auditLogRepository.save(auditLog);
+  }
+
+  private async checkEmailUniqueness(email: string, excludeId?: string): Promise<void> {
+    if (!email) {
+      return; // Null emails are allowed
+    }
+
+    const existingEmployee = await this.employeesRepository.findOne({
+      where: { email },
+    });
+
+    if (existingEmployee && existingEmployee.id !== excludeId) {
+      throw new ConflictException(`Employee with email ${email} already exists`);
+    }
+  }
+
+  private async validateManagerHierarchy(employeeId: string, managerId: string): Promise<void> {
+    if (!managerId) {
+      return; // No manager is valid (top-level employee)
+    }
+
+    // Check if employee is trying to be their own manager
+    if (employeeId === managerId) {
+      throw new BadRequestException('An employee cannot be their own manager');
+    }
+
+    // Traverse up the management chain to detect circular references
+    let currentManagerId = managerId;
+    let depth = 0;
+    const maxDepth = 20; // Prevent infinite loops
+
+    while (currentManagerId && depth < maxDepth) {
+      // Check if we've encountered the employee in the chain
+      if (currentManagerId === employeeId) {
+        throw new BadRequestException('Circular manager reference detected. This would create an invalid management hierarchy.');
+      }
+
+      // Get the next manager in the chain
+      const manager = await this.employeesRepository.findOne({
+        where: { id: currentManagerId },
+        select: ['id', 'managerId'],
+      });
+
+      if (!manager) {
+        throw new NotFoundException(`Manager with ID ${currentManagerId} not found`);
+      }
+
+      currentManagerId = manager.managerId;
+      depth++;
+    }
+
+    if (depth >= maxDepth) {
+      throw new BadRequestException('Management hierarchy is too deep (maximum 20 levels)');
+    }
   }
 
   async findAll(
@@ -145,6 +199,17 @@ export class EmployeesService {
       createEmployeeDto.email = `${firstName}.${lastName}@company.com`;
     }
 
+    // Validate email uniqueness
+    await this.checkEmailUniqueness(createEmployeeDto.email);
+
+    // Validate manager hierarchy if managerId is provided
+    if (createEmployeeDto.managerId) {
+      // For new employees, we'll use a temporary ID to check hierarchy
+      // This is safe because we haven't created the employee yet
+      const tempId = 'temp-new-employee';
+      await this.validateManagerHierarchy(tempId, createEmployeeDto.managerId);
+    }
+
     const employee = this.employeesRepository.create(createEmployeeDto);
     const savedEmployee = await this.employeesRepository.save(employee);
 
@@ -177,6 +242,16 @@ export class EmployeesService {
     }
 
     const oldData = { ...employee };
+
+    // Validate email uniqueness if email is being updated
+    if (updateEmployeeDto.email && updateEmployeeDto.email !== employee.email) {
+      await this.checkEmailUniqueness(updateEmployeeDto.email, id);
+    }
+
+    // Validate manager hierarchy if managerId is being updated
+    if ('managerId' in updateEmployeeDto && updateEmployeeDto.managerId !== employee.managerId) {
+      await this.validateManagerHierarchy(id, updateEmployeeDto.managerId);
+    }
 
     // If managerId is being updated, clear the manager relation to prevent TypeORM from using it
     if ('managerId' in updateEmployeeDto) {

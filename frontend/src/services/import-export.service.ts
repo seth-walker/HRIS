@@ -35,6 +35,9 @@ export const importExportService = {
   async exportEmployeesExcel(filters?: {
     department?: string;
     status?: string;
+    teamId?: string;
+    managerId?: string;
+    title?: string;
   }): Promise<void> {
     const response = await api.get('/import-export/export/employees/excel', {
       params: filters,
@@ -70,6 +73,9 @@ export const importExportService = {
   async exportEmployeesPDF(filters?: {
     department?: string;
     status?: string;
+    teamId?: string;
+    managerId?: string;
+    title?: string;
   }): Promise<void> {
     const response = await api.get('/import-export/export/employees/pdf', {
       params: filters,
