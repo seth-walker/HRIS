@@ -15,8 +15,6 @@ api.interceptors.request.use(
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
-    } else {
-      console.warn('No authentication token found in localStorage');
     }
     return config;
   },
@@ -30,8 +28,6 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      console.error('Authentication failed - token may be expired or invalid');
-      console.error('Error details:', error.response?.data);
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       window.location.href = '/login';

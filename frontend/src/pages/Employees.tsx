@@ -29,17 +29,6 @@ const Employees: React.FC = () => {
     queryFn: () => employeeService.getAll({ search }),
   });
 
-  // Debug: Log when employees data changes
-  React.useEffect(() => {
-    if (employees) {
-      console.log('Employees data updated in component:', employees.length, 'employees');
-      const nicole = employees.find(e => e.firstName === 'Nicole' && e.lastName === 'Anderson');
-      if (nicole) {
-        console.log('Nicole Anderson manager:', nicole.manager);
-      }
-    }
-  }, [employees]);
-
   const createMutation = useMutation({
     mutationFn: (data: Partial<Employee>) => employeeService.create(data),
     onSuccess: () => {
@@ -51,27 +40,9 @@ const Employees: React.FC = () => {
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<Employee> }) =>
       employeeService.update(id, data),
-    onSuccess: async (updatedEmployee) => {
-      console.log('Employee updated successfully:', updatedEmployee);
-      console.log('Invalidating and refetching queries...');
-
-      // Invalidate and refetch all employee queries
-      await queryClient.invalidateQueries({
-        queryKey: ['employees'],
-        refetchType: 'active'
-      });
-
-      // Force refetch the current query
-      await queryClient.refetchQueries({
-        queryKey: ['employees', search],
-        type: 'active'
-      });
-
-      console.log('Queries refetched, UI should update now');
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['employees'] });
       closeModal();
-    },
-    onError: (error) => {
-      console.error('Error updating employee:', error);
     },
   });
 
@@ -131,9 +102,6 @@ const Employees: React.FC = () => {
       salary: formData.salary ? parseFloat(formData.salary) : undefined,
       managerId: formData.managerId || undefined,
     };
-
-    console.log('Submitting employee update:', data);
-    console.log('Manager ID being sent:', data.managerId);
 
     if (editingEmployee) {
       updateMutation.mutate({ id: editingEmployee.id, data });

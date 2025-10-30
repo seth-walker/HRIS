@@ -1,6 +1,6 @@
 # HRIS - Human Resource Information System
 
-A modern, lightweight HRIS application built for small to mid-sized organizations. This full-stack TypeScript application provides comprehensive employee and team management with role-based access control.
+A modern, full-stack HRIS application built for small to mid-sized organizations. This TypeScript application provides comprehensive employee and team management with role-based access control.
 
 ![Tech Stack](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
 ![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
@@ -10,8 +10,8 @@ A modern, lightweight HRIS application built for small to mid-sized organization
 ## Features
 
 ### Core Functionality
-- **Employee Management** - Complete CRUD operations for employee records
-- **Team Directory** - Hierarchical team structure with sub-teams support
+- **Employee Management** - Complete CRUD operations with manager assignments
+- **Team Directory** - Hierarchical team structure with team leads
 - **Organizational Chart** - Interactive visualization of reporting relationships
 - **Global Search** - System-wide search across employees and teams
 - **Role-Based Access Control** - Four distinct user roles (Admin, HR, Manager, Employee)
@@ -48,7 +48,7 @@ A modern, lightweight HRIS application built for small to mid-sized organization
 - **React 18** - UI library
 - **Vite** - Next generation frontend tooling
 - **TypeScript** - Type-safe development
-- **TailwindCSS** - Utility-first CSS framework
+- **TailwindCSS v4** - Utility-first CSS framework
 - **React Router** - Client-side routing
 - **React Query** - Data fetching and caching
 - **Axios** - HTTP client
@@ -98,6 +98,11 @@ HRIS/
 │   ├── src/
 │   │   ├── entities/       # Database entities
 │   │   ├── modules/        # Feature modules
+│   │   │   ├── auth/       # Authentication
+│   │   │   ├── employees/  # Employee management
+│   │   │   ├── teams/      # Team management
+│   │   │   ├── import-export/  # CSV/Excel/PDF operations
+│   │   │   └── audit-log/  # Audit logging
 │   │   ├── guards/         # Authentication guards
 │   │   └── seed.ts         # Database seeding
 │   └── package.json
@@ -106,11 +111,18 @@ HRIS/
 │   ├── src/
 │   │   ├── components/     # Reusable components
 │   │   ├── pages/          # Page components
+│   │   │   ├── Login.tsx
+│   │   │   ├── Employees.tsx
+│   │   │   ├── Teams.tsx
+│   │   │   └── ImportExport.tsx
 │   │   ├── services/       # API services
 │   │   └── context/        # React context
 │   └── package.json
 │
-└── SETUP.md               # Setup instructions
+├── SETUP.md               # Setup instructions
+├── DEPLOYMENT.md          # Deployment guide
+├── TESTING.md             # Testing guide
+└── QUICK_REFERENCE.md     # Quick command reference
 ```
 
 ## API Documentation
@@ -123,7 +135,7 @@ POST /api/auth/register
 
 ### Employees
 ```
-GET    /api/employees              # List employees
+GET    /api/employees              # List employees (with filters)
 GET    /api/employees/:id          # Get employee
 POST   /api/employees              # Create employee
 PUT    /api/employees/:id          # Update employee
@@ -142,6 +154,15 @@ DELETE /api/teams/:id        # Delete team
 GET    /api/teams/hierarchy  # Get hierarchy
 ```
 
+### Import/Export
+```
+POST /api/import-export/import/csv              # Upload CSV
+GET  /api/import-export/export/employees/excel  # Export to Excel
+GET  /api/import-export/export/employees/pdf    # Export to PDF
+GET  /api/import-export/export/org-chart/pdf    # Export org chart
+GET  /api/import-export/template/csv            # Download template
+```
+
 ## Development Roadmap
 
 ### Phase 1: Core Features ✅
@@ -158,13 +179,43 @@ GET    /api/teams/hierarchy  # Get hierarchy
 - [x] PDF Export (employees & org chart)
 - [x] Advanced Filtering & Sorting
 - [x] CSV Template Download
-- [ ] Custom Report Builder (Phase 2.1)
+- [x] Manager assignment
+- [x] Team member management
 
 ### Phase 3: Enhanced Features (Future)
 - [ ] Performance Reviews
 - [ ] Time-off Management
 - [ ] Document Management
 - [ ] Notifications System
+- [ ] Custom Report Builder
+- [ ] Scheduled Exports
+
+## Testing
+
+```bash
+# Backend tests
+cd backend
+npm test                  # Run all tests
+npm run test:cov          # With coverage
+npm run test:watch        # Watch mode
+
+# Frontend tests
+cd frontend
+npm test                  # Run tests
+npm run test:coverage     # With coverage
+npm run test:ui           # Visual UI
+```
+
+See [TESTING.md](./TESTING.md) for comprehensive testing guide.
+
+## Documentation
+
+- [SETUP.md](./SETUP.md) - Detailed setup instructions
+- [FEATURES.md](./FEATURES.md) - Complete features documentation
+- [DEPLOYMENT.md](./DEPLOYMENT.md) - Production deployment guide
+- [TESTING.md](./TESTING.md) - Testing guide and best practices
+- [QUICK_REFERENCE.md](./QUICK_REFERENCE.md) - Command reference
+- [DATABASE_SCHEMA.md](./DATABASE_SCHEMA.md) - Database structure
 
 ## Contributing
 

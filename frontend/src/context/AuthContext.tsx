@@ -23,12 +23,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setUser(parsedUser);
         } else {
           // Clear invalid/old data
-          console.log('Clearing old user data - please log in again');
           localStorage.removeItem('token');
           localStorage.removeItem('user');
         }
-      } catch (error) {
-        console.error('Failed to parse stored user data:', error);
+      } catch {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
       }
@@ -38,21 +36,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const login = async (email: string, password: string) => {
-    try {
-      const response = await authService.login({ email, password });
+    const response = await authService.login({ email, password });
 
-      localStorage.setItem('token', response.access_token);
-      localStorage.setItem('user', JSON.stringify(response.user));
+    localStorage.setItem('token', response.access_token);
+    localStorage.setItem('user', JSON.stringify(response.user));
 
-      setToken(response.access_token);
-      setUser(response.user);
-
-      console.log('✅ Login successful - token saved to localStorage');
-      console.log('Token preview:', response.access_token.substring(0, 20) + '...');
-    } catch (error) {
-      console.error('❌ Login failed:', error);
-      throw error;
-    }
+    setToken(response.access_token);
+    setUser(response.user);
   };
 
   const logout = () => {
