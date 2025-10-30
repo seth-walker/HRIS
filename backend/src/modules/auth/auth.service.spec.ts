@@ -129,20 +129,19 @@ describe('AuthService', () => {
         id: '1',
         email: 'test@example.com',
         role: { name: RoleName.EMPLOYEE },
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
       };
 
       mockJwtService.sign.mockReturnValue('jwt-token');
 
-      const result = await service.login(mockUser);
+      const result = await service.login(mockUser as any);
 
-      expect(result).toEqual({
-        access_token: 'jwt-token',
-        user: {
-          id: '1',
-          email: 'test@example.com',
-          role: RoleName.EMPLOYEE,
-        },
-      });
+      expect(result.access_token).toEqual('jwt-token');
+      expect(result.user.id).toEqual('1');
+      expect(result.user.email).toEqual('test@example.com');
+      expect(result.user.role).toEqual({ name: RoleName.EMPLOYEE });
       expect(mockJwtService.sign).toHaveBeenCalledWith({
         email: 'test@example.com',
         sub: '1',

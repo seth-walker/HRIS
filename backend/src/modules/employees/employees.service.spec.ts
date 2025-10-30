@@ -11,12 +11,21 @@ describe('EmployeesService', () => {
   let employeeRepository: Repository<Employee>;
   let auditLogRepository: Repository<AuditLog>;
 
+  const mockQueryBuilder = {
+    leftJoinAndSelect: jest.fn().mockReturnThis(),
+    andWhere: jest.fn().mockReturnThis(),
+    where: jest.fn().mockReturnThis(),
+    orderBy: jest.fn().mockReturnThis(),
+    getMany: jest.fn(),
+  };
+
   const mockEmployeeRepository = {
     find: jest.fn(),
     findOne: jest.fn(),
     create: jest.fn(),
     save: jest.fn(),
     remove: jest.fn(),
+    createQueryBuilder: jest.fn(() => mockQueryBuilder),
   };
 
   const mockAuditLogRepository = {
@@ -79,16 +88,13 @@ describe('EmployeesService', () => {
         role: { name: RoleName.ADMIN },
       };
 
-      mockEmployeeRepository.find.mockResolvedValue(mockEmployees);
+      mockQueryBuilder.getMany.mockResolvedValue(mockEmployees);
 
       const result = await service.findAll(mockUser);
 
       expect(result).toEqual(mockEmployees);
-      expect(mockEmployeeRepository.find).toHaveBeenCalledWith({
-        where: {},
-        relations: ['manager', 'team', 'directReports'],
-        order: { lastName: 'ASC' },
-      });
+      expect(mockEmployeeRepository.createQueryBuilder).toHaveBeenCalledWith('employee');
+      expect(mockQueryBuilder.orderBy).toHaveBeenCalled();
     });
 
     it('should filter employees by department', async () => {
@@ -107,17 +113,16 @@ describe('EmployeesService', () => {
         role: { name: RoleName.ADMIN },
       };
 
-      mockEmployeeRepository.find.mockResolvedValue(mockEmployees);
+      mockQueryBuilder.getMany.mockResolvedValue(mockEmployees);
 
       const result = await service.findAll(mockUser, {
         department: 'Engineering',
       });
 
       expect(result).toEqual(mockEmployees);
-      expect(mockEmployeeRepository.find).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: { department: 'Engineering' },
-        }),
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'employee.department = :department',
+        { department: 'Engineering' }
       );
     });
 
@@ -149,7 +154,7 @@ describe('EmployeesService', () => {
         employee: { id: managerId },
       };
 
-      mockEmployeeRepository.find.mockResolvedValue(mockEmployees);
+      mockQueryBuilder.getMany.mockResolvedValue(mockEmployees);
 
       const result = await service.findAll(mockUser);
 

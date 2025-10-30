@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like } from 'typeorm';
+import { Repository, Like, ILike } from 'typeorm';
 import { Team } from '../../entities/team.entity';
 import { AuditLog, AuditAction } from '../../entities/audit-log.entity';
 import { CreateTeamDto } from './dto/create-team.dto';
@@ -32,17 +32,24 @@ export class TeamsService {
   }
 
   async findAll(filters?: { search?: string }): Promise<Team[]> {
-    const where: any = {};
+    const queryBuilder = this.teamsRepository
+      .createQueryBuilder('team')
+      .leftJoinAndSelect('team.lead', 'lead')
+      .leftJoinAndSelect('team.members', 'members')
+      .leftJoinAndSelect('team.parentTeam', 'parentTeam')
+      .leftJoinAndSelect('team.subTeams', 'subTeams');
 
+    // Case-insensitive search across team name and description
     if (filters?.search) {
-      where.name = Like(`%${filters.search}%`);
+      queryBuilder.where(
+        '(team.name ILIKE :search OR team.description ILIKE :search)',
+        { search: `%${filters.search}%` }
+      );
     }
 
-    return this.teamsRepository.find({
-      where,
-      relations: ['lead', 'members', 'parentTeam', 'subTeams'],
-      order: { name: 'ASC' },
-    });
+    queryBuilder.orderBy('team.name', 'ASC');
+
+    return queryBuilder.getMany();
   }
 
   async findOne(id: string): Promise<Team> {

@@ -17,7 +17,7 @@ const Login: React.FC = () => {
 
     try {
       await login(email, password);
-      navigate('/employees');
+      navigate('/search');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
     } finally {

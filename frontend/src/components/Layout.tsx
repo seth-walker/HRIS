@@ -20,10 +20,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const canAccessAdminFeatures = user?.role.name === RoleName.ADMIN || user?.role.name === RoleName.HR;
 
   const navItems = [
+    { path: '/search', label: 'Search', icon: FiSearch },
     { path: '/employees', label: 'Employees', icon: FiUsers },
     { path: '/teams', label: 'Teams', icon: FiGrid },
     { path: '/org-chart', label: 'Org Chart', icon: FiFileText },
-    { path: '/search', label: 'Search', icon: FiSearch },
     ...(canAccessAdminFeatures ? [{ path: '/import-export', label: 'Import/Export', icon: FiDownload }] : []),
     ...(canAccessAdminFeatures ? [{ path: '/audit-logs', label: 'Audit Logs', icon: FiClock }] : []),
   ];

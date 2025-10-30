@@ -88,7 +88,7 @@ function App() {
                 </PrivateRoute>
               }
             />
-            <Route path="/" element={<Navigate to="/employees" />} />
+            <Route path="/" element={<Navigate to="/search" />} />
           </Routes>
         </Router>
       </AuthProvider>

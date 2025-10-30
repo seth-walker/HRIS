@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like, In } from 'typeorm';
+import { Repository, Like, ILike, In } from 'typeorm';
 import { Employee } from '../../entities/employee.entity';
 import { AuditLog, AuditAction } from '../../entities/audit-log.entity';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
@@ -45,39 +45,52 @@ export class EmployeesService {
       sortOrder?: 'ASC' | 'DESC';
     },
   ): Promise<Employee[]> {
-    const where: any = {};
-
-    if (filters?.department) {
-      where.department = filters.department;
-    }
-
-    if (filters?.status) {
-      where.status = filters.status;
-    }
-
-    if (filters?.title) {
-      where.title = Like(`%${filters.title}%`);
-    }
-
-    if (filters?.teamId) {
-      where.teamId = filters.teamId;
-    }
-
-    if (filters?.managerId) {
-      where.managerId = filters.managerId;
-    }
-
     // Determine sort order
     const orderBy = filters?.sortBy || 'lastName';
     const orderDirection = filters?.sortOrder || 'ASC';
     const order: any = {};
     order[orderBy] = orderDirection;
 
-    const employees = await this.employeesRepository.find({
-      where,
-      relations: ['manager', 'team', 'directReports'],
-      order,
-    });
+    // Build query using QueryBuilder for more complex search
+    const queryBuilder = this.employeesRepository
+      .createQueryBuilder('employee')
+      .leftJoinAndSelect('employee.manager', 'manager')
+      .leftJoinAndSelect('employee.team', 'team')
+      .leftJoinAndSelect('employee.directReports', 'directReports');
+
+    // Apply filters
+    if (filters?.department) {
+      queryBuilder.andWhere('employee.department = :department', { department: filters.department });
+    }
+
+    if (filters?.status) {
+      queryBuilder.andWhere('employee.status = :status', { status: filters.status });
+    }
+
+    if (filters?.title) {
+      queryBuilder.andWhere('employee.title ILIKE :title', { title: `%${filters.title}%` });
+    }
+
+    if (filters?.teamId) {
+      queryBuilder.andWhere('employee.teamId = :teamId', { teamId: filters.teamId });
+    }
+
+    if (filters?.managerId) {
+      queryBuilder.andWhere('employee.managerId = :managerId', { managerId: filters.managerId });
+    }
+
+    // Case-insensitive search across multiple fields
+    if (filters?.search) {
+      queryBuilder.andWhere(
+        '(employee.firstName ILIKE :search OR employee.lastName ILIKE :search OR employee.email ILIKE :search OR employee.title ILIKE :search OR employee.department ILIKE :search)',
+        { search: `%${filters.search}%` }
+      );
+    }
+
+    // Apply sorting
+    queryBuilder.orderBy(`employee.${orderBy}`, orderDirection);
+
+    const employees = await queryBuilder.getMany();
 
     // Filter based on role permissions
     if (user.role.name === RoleName.MANAGER) {
@@ -85,16 +98,6 @@ export class EmployeesService {
       const managerId = user.employee?.id;
       return employees.filter(
         (emp) => emp.id === managerId || emp.managerId === managerId,
-      );
-    }
-
-    // For search, filter by name
-    if (filters?.search) {
-      return employees.filter(
-        (emp) =>
-          emp.firstName.toLowerCase().includes(filters.search.toLowerCase()) ||
-          emp.lastName.toLowerCase().includes(filters.search.toLowerCase()) ||
-          emp.email?.toLowerCase().includes(filters.search.toLowerCase()),
       );
     }
 
