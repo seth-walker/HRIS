@@ -1,5 +1,5 @@
-import { IsString, IsEmail, IsOptional, IsDate, IsNumber, IsEnum, IsUUID } from 'class-validator';
-import { Type } from 'class-transformer';
+import { IsString, IsEmail, IsOptional, IsDate, IsNumber, IsEnum, IsUUID, ValidateIf } from 'class-validator';
+import { Type, Transform } from 'class-transformer';
 import { EmploymentStatus } from '../../../entities/employee.entity';
 
 export class CreateEmployeeDto {
@@ -16,6 +16,8 @@ export class CreateEmployeeDto {
   @IsOptional()
   department?: string;
 
+  @Transform(({ value }) => value === '' ? undefined : value)
+  @ValidateIf((o) => o.email !== undefined && o.email !== null)
   @IsEmail()
   @IsOptional()
   email?: string;
@@ -24,10 +26,14 @@ export class CreateEmployeeDto {
   @IsOptional()
   phone?: string;
 
+  @Transform(({ value }) => value === '' ? undefined : value)
+  @ValidateIf((o) => o.managerId !== undefined && o.managerId !== null)
   @IsUUID()
   @IsOptional()
   managerId?: string;
 
+  @Transform(({ value }) => value === '' ? undefined : value)
+  @ValidateIf((o) => o.teamId !== undefined && o.teamId !== null)
   @IsUUID()
   @IsOptional()
   teamId?: string;

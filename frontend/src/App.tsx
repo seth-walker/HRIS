@@ -8,6 +8,7 @@ import Teams from './pages/Teams';
 import OrgChart from './pages/OrgChart';
 import Search from './pages/Search';
 import ImportExport from './pages/ImportExport';
+import AuditLogs from './pages/AuditLogs';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -76,6 +77,14 @@ function App() {
               element={
                 <PrivateRoute>
                   <ImportExport />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/audit-logs"
+              element={
+                <PrivateRoute>
+                  <AuditLogs />
                 </PrivateRoute>
               }
             />

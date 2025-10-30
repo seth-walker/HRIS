@@ -135,6 +135,13 @@ export class EmployeesService {
     createEmployeeDto: CreateEmployeeDto,
     userId: string,
   ): Promise<Employee> {
+    // Generate default email if not provided
+    if (!createEmployeeDto.email) {
+      const firstName = createEmployeeDto.firstName.toLowerCase().replace(/\s+/g, '');
+      const lastName = createEmployeeDto.lastName.toLowerCase().replace(/\s+/g, '');
+      createEmployeeDto.email = `${firstName}.${lastName}@company.com`;
+    }
+
     const employee = this.employeesRepository.create(createEmployeeDto);
     const savedEmployee = await this.employeesRepository.save(employee);
 

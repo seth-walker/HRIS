@@ -311,8 +311,12 @@ const Employees: React.FC = () => {
                     onChange={(e) =>
                       setFormData({ ...formData, email: e.target.value })
                     }
+                    placeholder="firstname.lastname@company.com"
                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm px-3 py-2 border"
                   />
+                  <p className="mt-1 text-xs text-gray-500">
+                    Leave blank to auto-generate: firstname.lastname@company.com
+                  </p>
                 </div>
 
                 <div>

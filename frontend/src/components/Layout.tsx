@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { FiHome, FiUsers, FiGrid, FiLogOut, FiSearch, FiFileText, FiDownload } from 'react-icons/fi';
+import { FiHome, FiUsers, FiGrid, FiLogOut, FiSearch, FiFileText, FiDownload, FiClock } from 'react-icons/fi';
 import { RoleName } from '../types/index';
 
 interface LayoutProps {
@@ -17,14 +17,15 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     navigate('/login');
   };
 
-  const canImportExport = user?.role.name === RoleName.ADMIN || user?.role.name === RoleName.HR;
+  const canAccessAdminFeatures = user?.role.name === RoleName.ADMIN || user?.role.name === RoleName.HR;
 
   const navItems = [
     { path: '/employees', label: 'Employees', icon: FiUsers },
     { path: '/teams', label: 'Teams', icon: FiGrid },
     { path: '/org-chart', label: 'Org Chart', icon: FiFileText },
     { path: '/search', label: 'Search', icon: FiSearch },
-    ...(canImportExport ? [{ path: '/import-export', label: 'Import/Export', icon: FiDownload }] : []),
+    ...(canAccessAdminFeatures ? [{ path: '/import-export', label: 'Import/Export', icon: FiDownload }] : []),
+    ...(canAccessAdminFeatures ? [{ path: '/audit-logs', label: 'Audit Logs', icon: FiClock }] : []),
   ];
 
   return (
