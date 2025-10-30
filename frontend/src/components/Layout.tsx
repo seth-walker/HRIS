@@ -20,7 +20,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const canImportExport = user?.role.name === RoleName.ADMIN || user?.role.name === RoleName.HR;
 
   const navItems = [
-    { path: '/dashboard', label: 'Dashboard', icon: FiHome },
     { path: '/employees', label: 'Employees', icon: FiUsers },
     { path: '/teams', label: 'Teams', icon: FiGrid },
     { path: '/org-chart', label: 'Org Chart', icon: FiFileText },
