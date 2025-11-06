@@ -59,4 +59,29 @@ export class TeamsController {
   async remove(@Param('id') id: string, @CurrentUser() user: any) {
     return this.teamsService.remove(id, user.id);
   }
+
+  @Post(':teamId/members/:employeeId')
+  @Roles(RoleName.ADMIN, RoleName.HR)
+  async addTeamMember(
+    @Param('teamId') teamId: string,
+    @Param('employeeId') employeeId: string,
+    @CurrentUser() user: any,
+  ) {
+    return this.teamsService.addTeamMember(teamId, employeeId, user.id);
+  }
+
+  @Delete(':teamId/members/:employeeId')
+  @Roles(RoleName.ADMIN, RoleName.HR)
+  async removeTeamMember(
+    @Param('teamId') teamId: string,
+    @Param('employeeId') employeeId: string,
+    @CurrentUser() user: any,
+  ) {
+    return this.teamsService.removeTeamMember(teamId, employeeId, user.id);
+  }
+
+  @Get(':teamId/members')
+  async getTeamMembers(@Param('teamId') teamId: string) {
+    return this.teamsService.getTeamMembers(teamId);
+  }
 }

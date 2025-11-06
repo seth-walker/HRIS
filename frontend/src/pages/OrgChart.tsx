@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { employeeService } from '../services/employee.service';
 import { FiChevronDown, FiChevronRight, FiMail, FiPhone, FiCalendar, FiDollarSign, FiUsers, FiX, FiUser } from 'react-icons/fi';
-import type { OrgChartNode, Employee } from '../types/index';
+import type { OrgChartNode } from '../types/index';
 
 interface OrgChartNodeProps {
   node: OrgChartNode;

@@ -1,5 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, JoinColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 import { Employee } from './employee.entity';
+import { EmployeeTeamMembership } from './employee-team-membership.entity';
 
 @Entity('teams')
 export class Team {
@@ -19,8 +20,9 @@ export class Team {
   @Column({ nullable: true })
   leadId: string;
 
-  @OneToMany(() => Employee, employee => employee.team)
-  members: Employee[];
+  // Many-to-many relationship with employees through junction table
+  @OneToMany(() => EmployeeTeamMembership, membership => membership.team)
+  teamMemberships: EmployeeTeamMembership[];
 
   @ManyToOne(() => Team, team => team.subTeams, { nullable: true })
   @JoinColumn({ name: 'parentTeamId' })

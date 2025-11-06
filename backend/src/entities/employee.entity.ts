@@ -1,6 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, JoinColumn, CreateDateColumn, UpdateDateColumn, OneToOne } from 'typeorm';
 import { Team } from './team.entity';
 import { User } from './user.entity';
+import { EmployeeTeamMembership } from './employee-team-membership.entity';
 
 export enum EmploymentStatus {
   ACTIVE = 'active',
@@ -41,15 +42,12 @@ export class Employee {
   @OneToMany(() => Employee, employee => employee.manager)
   directReports: Employee[];
 
-  @ManyToOne(() => Team, team => team.members, { nullable: true })
-  @JoinColumn({ name: 'teamId' })
-  team: Team;
-
-  @Column({ nullable: true })
-  teamId: string;
-
   @OneToMany(() => Team, team => team.lead)
   teamsLed: Team[];
+
+  // Many-to-many relationship with teams through junction table
+  @OneToMany(() => EmployeeTeamMembership, membership => membership.employee)
+  teamMemberships: EmployeeTeamMembership[];
 
   @Column({ type: 'date' })
   hireDate: Date;

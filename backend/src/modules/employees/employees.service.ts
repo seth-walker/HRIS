@@ -93,7 +93,6 @@ export class EmployeesService {
       status?: string;
       title?: string;
       search?: string;
-      teamId?: string;
       managerId?: string;
       sortBy?: string;
       sortOrder?: 'ASC' | 'DESC';
@@ -109,7 +108,6 @@ export class EmployeesService {
     const queryBuilder = this.employeesRepository
       .createQueryBuilder('employee')
       .leftJoinAndSelect('employee.manager', 'manager')
-      .leftJoinAndSelect('employee.team', 'team')
       .leftJoinAndSelect('employee.directReports', 'directReports');
 
     // Apply filters
@@ -123,10 +121,6 @@ export class EmployeesService {
 
     if (filters?.title) {
       queryBuilder.andWhere('employee.title ILIKE :title', { title: `%${filters.title}%` });
-    }
-
-    if (filters?.teamId) {
-      queryBuilder.andWhere('employee.teamId = :teamId', { teamId: filters.teamId });
     }
 
     if (filters?.managerId) {
@@ -161,7 +155,7 @@ export class EmployeesService {
   async findOne(id: string, user: any): Promise<Employee> {
     const employee = await this.employeesRepository.findOne({
       where: { id },
-      relations: ['manager', 'team', 'directReports', 'teamsLed'],
+      relations: ['manager', 'directReports', 'teamsLed'],
     });
 
     if (!employee) {
@@ -258,11 +252,6 @@ export class EmployeesService {
       delete employee.manager;
     }
 
-    // If teamId is being updated, clear the team relation to prevent TypeORM from using it
-    if ('teamId' in updateEmployeeDto) {
-      delete employee.team;
-    }
-
     Object.assign(employee, updateEmployeeDto);
     console.log('📝 Employee after assign, managerId:', employee.managerId);
 
@@ -293,7 +282,7 @@ export class EmployeesService {
 
   async getOrgChart(): Promise<any> {
     const employees = await this.employeesRepository.find({
-      relations: ['manager', 'directReports', 'team'],
+      relations: ['manager', 'directReports'],
       order: { lastName: 'ASC' },
     });
 
@@ -306,7 +295,6 @@ export class EmployeesService {
           name: `${emp.firstName} ${emp.lastName}`,
           title: emp.title,
           department: emp.department,
-          teamId: emp.teamId,
           children: buildTree(emp.id),
         }));
     };
@@ -363,7 +351,6 @@ export class EmployeesService {
   async getDirectReports(managerId: string): Promise<Employee[]> {
     return this.employeesRepository.find({
       where: { managerId },
-      relations: ['team'],
       order: { lastName: 'ASC' },
     });
   }

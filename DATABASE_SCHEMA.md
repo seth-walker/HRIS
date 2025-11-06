@@ -26,7 +26,6 @@
 │ createdAt       │          │ email           │
 │ updatedAt       │          │ phone           │
 └─────────────────┘          │ managerId (FK)  │◄─┐
-                             │ teamId (FK)     │  │
                              │ hireDate        │  │
                              │ salary          │  │
                              │ status          │  │
@@ -35,10 +34,22 @@
                              │ updatedAt       │  │
                              └────────┬────────┘  │
                                       │           │
-                                      │           │
-                                   N:1│           │Self-referencing
-                                      │           │(Manager-Employee)
-                             ┌────────▼────────┐  │
+                                      │ 1:N       │Self-referencing
+                         ┌────────────┤           │(Manager-Employee)
+                         │            │           │
+              ┌──────────▼──────┐     │           │
+              │Employee_Team    │     │           │
+              │Memberships      │     │           │
+              ├─────────────────┤     │           │
+              │ id (PK)         │     │           │
+              │ employeeId (FK) │─────┘           │
+              │ teamId (FK)     │──┐              │
+              │ createdAt       │  │              │
+              │ updatedAt       │  │              │
+              └─────────────────┘  │              │
+                         N:N       │              │
+                                   │              │
+                             ┌─────▼──────────┐  │
                              │     Teams       │  │
                              ├─────────────────┤  │
                              │ id (PK)         │  │
@@ -123,7 +134,6 @@ Core employee information and organizational structure.
 | email       | VARCHAR      |                            | Work email                     |
 | phone       | VARCHAR      |                            | Contact phone                  |
 | managerId   | UUID         | FOREIGN KEY → Employees.id | Direct manager (self-ref)      |
-| teamId      | UUID         | FOREIGN KEY → Teams.id     | Assigned team                  |
 | hireDate    | DATE         | NOT NULL                   | Date of hire                   |
 | salary      | DECIMAL(10,2)|                            | Annual salary                  |
 | status      | ENUM         | DEFAULT 'active'           | Employment status              |
@@ -136,7 +146,7 @@ Core employee information and organizational structure.
 **Relationships:**
 - Self-referencing (Manager → Employees)
 - One-to-Many: directReports
-- Many-to-One with Teams
+- Many-to-Many with Teams (via EmployeeTeamMemberships)
 - One-to-One with Users (optional)
 - One-to-Many: teamsLed
 
@@ -159,7 +169,31 @@ Team/department structure with hierarchy support.
 **Relationships:**
 - Self-referencing (Parent → Child Teams)
 - Many-to-One with Employees (lead)
-- One-to-Many with Employees (members)
+- Many-to-Many with Employees (via EmployeeTeamMemberships)
+
+---
+
+### EmployeeTeamMemberships
+
+Junction table enabling employees to be members of multiple teams.
+
+| Column      | Type      | Constraints                      | Description                    |
+|-------------|-----------|----------------------------------|--------------------------------|
+| id          | UUID      | PRIMARY KEY                      | Unique identifier              |
+| employeeId  | UUID      | FOREIGN KEY → Employees.id       | Employee reference             |
+| teamId      | UUID      | FOREIGN KEY → Teams.id           | Team reference                 |
+| createdAt   | TIMESTAMP | NOT NULL                         | Record creation time           |
+| updatedAt   | TIMESTAMP | NOT NULL                         | Last update time               |
+
+**Relationships:**
+- Many-to-One with Employees
+- Many-to-One with Teams
+
+**Notes:**
+- Enables many-to-many relationship between Employees and Teams
+- An employee can be a member of multiple teams through this table
+- Unique constraint on (employeeId, teamId) to prevent duplicate memberships
+- CASCADE delete ensures memberships are removed when employees or teams are deleted
 
 ---
 
@@ -225,7 +259,6 @@ CREATE INDEX idx_users_role_id ON users(roleId);
 
 -- Employees
 CREATE INDEX idx_employees_manager_id ON employees(managerId);
-CREATE INDEX idx_employees_team_id ON employees(teamId);
 CREATE INDEX idx_employees_status ON employees(status);
 CREATE INDEX idx_employees_department ON employees(department);
 CREATE INDEX idx_employees_name ON employees(lastName, firstName);
@@ -233,6 +266,11 @@ CREATE INDEX idx_employees_name ON employees(lastName, firstName);
 -- Teams
 CREATE INDEX idx_teams_parent_team_id ON teams(parentTeamId);
 CREATE INDEX idx_teams_lead_id ON teams(leadId);
+
+-- Employee Team Memberships
+CREATE INDEX idx_employee_team_memberships_employee_id ON employee_team_memberships(employeeId);
+CREATE INDEX idx_employee_team_memberships_team_id ON employee_team_memberships(teamId);
+CREATE UNIQUE INDEX idx_employee_team_memberships_unique ON employee_team_memberships(employeeId, teamId);
 
 -- Audit Logs
 CREATE INDEX idx_audit_logs_user_id ON audit_logs(userId);
@@ -248,16 +286,18 @@ All foreign keys use `ON DELETE SET NULL` or `ON DELETE CASCADE` depending on th
 
 - **Users.roleId** → Roles.id (RESTRICT - cannot delete role in use)
 - **Employees.managerId** → Employees.id (SET NULL - preserve employee if manager deleted)
-- **Employees.teamId** → Teams.id (SET NULL - preserve employee if team deleted)
 - **Employees.userId** → Users.id (SET NULL - preserve employee if user deleted)
 - **Teams.leadId** → Employees.id (SET NULL - preserve team if lead leaves)
 - **Teams.parentTeamId** → Teams.id (SET NULL - preserve team if parent deleted)
+- **EmployeeTeamMemberships.employeeId** → Employees.id (CASCADE - delete membership if employee deleted)
+- **EmployeeTeamMemberships.teamId** → Teams.id (CASCADE - delete membership if team deleted)
 - **AuditLogs.userId** → Users.id (SET NULL - preserve log if user deleted)
 
 ### Unique Constraints
 
 - Users.email - Prevents duplicate accounts
 - Roles.name - Ensures unique role names
+- EmployeeTeamMemberships(employeeId, teamId) - Prevents duplicate team memberships
 
 ## Sample Queries
 

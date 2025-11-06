@@ -32,12 +32,6 @@ export class CreateEmployeeDto {
   @IsOptional()
   managerId?: string;
 
-  @Transform(({ value }) => value === '' ? undefined : value)
-  @ValidateIf((o) => o.teamId !== undefined && o.teamId !== null)
-  @IsUUID()
-  @IsOptional()
-  teamId?: string;
-
   @Type(() => Date)
   @IsDate()
   hireDate: Date;

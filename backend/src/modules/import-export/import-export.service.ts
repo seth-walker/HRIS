@@ -159,7 +159,8 @@ export class ImportExportService {
     const queryBuilder = this.employeesRepository
       .createQueryBuilder('employee')
       .leftJoinAndSelect('employee.manager', 'manager')
-      .leftJoinAndSelect('employee.team', 'team');
+      .leftJoinAndSelect('employee.teamMemberships', 'teamMemberships')
+      .leftJoinAndSelect('teamMemberships.team', 'team');
 
     // Apply filters
     if (filters?.department) {
@@ -167,9 +168,6 @@ export class ImportExportService {
     }
     if (filters?.status) {
       queryBuilder.andWhere('employee.status = :status', { status: filters.status });
-    }
-    if (filters?.teamId) {
-      queryBuilder.andWhere('employee.teamId = :teamId', { teamId: filters.teamId });
     }
     if (filters?.managerId) {
       queryBuilder.andWhere('employee.managerId = :managerId', { managerId: filters.managerId });
@@ -194,7 +192,9 @@ export class ImportExportService {
         manager: employee.manager
           ? `${employee.manager.firstName} ${employee.manager.lastName}`
           : '',
-        team: employee.team?.name || '',
+        team: employee.teamMemberships && employee.teamMemberships.length > 0
+          ? employee.teamMemberships.map((m: any) => m.team.name).join(', ')
+          : '',
         hireDate: employee.hireDate,
         salary: employee.salary || '',
         status: employee.status,
@@ -243,7 +243,7 @@ export class ImportExportService {
 
     // Get teams
     const teams = await this.teamsRepository.find({
-      relations: ['lead', 'parentTeam', 'members'],
+      relations: ['lead', 'parentTeam', 'teamMemberships'],
       order: { name: 'ASC' },
     });
 
@@ -256,7 +256,7 @@ export class ImportExportService {
           ? `${team.lead.firstName} ${team.lead.lastName}`
           : '',
         parentTeam: team.parentTeam?.name || '',
-        memberCount: team.members?.length || 0,
+        memberCount: team.teamMemberships?.length || 0,
       });
     });
 
@@ -374,7 +374,8 @@ export class ImportExportService {
       const queryBuilder = this.employeesRepository
         .createQueryBuilder('employee')
         .leftJoinAndSelect('employee.manager', 'manager')
-        .leftJoinAndSelect('employee.team', 'team');
+        .leftJoinAndSelect('employee.teamMemberships', 'teamMemberships')
+        .leftJoinAndSelect('teamMemberships.team', 'team');
 
       // Apply filters
       if (filters?.department) {
@@ -382,9 +383,6 @@ export class ImportExportService {
       }
       if (filters?.status) {
         queryBuilder.andWhere('employee.status = :status', { status: filters.status });
-      }
-      if (filters?.teamId) {
-        queryBuilder.andWhere('employee.teamId = :teamId', { teamId: filters.teamId });
       }
       if (filters?.managerId) {
         queryBuilder.andWhere('employee.managerId = :managerId', { managerId: filters.managerId });
@@ -426,7 +424,9 @@ export class ImportExportService {
           employee.title,
           employee.department || '',
           employee.email || '',
-          employee.team?.name || '',
+          employee.teamMemberships && employee.teamMemberships.length > 0
+            ? employee.teamMemberships.map((m: any) => m.team.name).join(', ')
+            : '',
           employee.status,
         ];
 

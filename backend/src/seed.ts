@@ -6,6 +6,7 @@ import { User } from './entities/user.entity';
 import { Employee, EmploymentStatus } from './entities/employee.entity';
 import { Team } from './entities/team.entity';
 import { AuditLog } from './entities/audit-log.entity';
+import { EmployeeTeamMembership } from './entities/employee-team-membership.entity';
 
 dotenv.config();
 
@@ -16,7 +17,7 @@ const AppDataSource = new DataSource({
   username: process.env.DB_USERNAME || 'hris_user',
   password: process.env.DB_PASSWORD || 'password',
   database: process.env.DB_DATABASE || 'hris_db',
-  entities: [Role, User, Employee, Team, AuditLog],
+  entities: [Role, User, Employee, Team, AuditLog, EmployeeTeamMembership],
   synchronize: true,
   logging: false,
 });
@@ -34,7 +35,7 @@ async function seed() {
     // Clear existing data in correct order (child tables first)
     // Due to foreign key constraints, we need to clear in this specific order
     // Only clear if tables exist (first run won't have tables yet)
-    const tablesToClear = ['employees', 'teams', 'users', 'roles', 'audit_logs'];
+    const tablesToClear = ['employee_team_memberships', 'employees', 'teams', 'users', 'roles', 'audit_logs'];
     for (const table of tablesToClear) {
       try {
         await AppDataSource.query(`TRUNCATE TABLE "${table}" CASCADE`);
@@ -100,7 +101,26 @@ async function seed() {
     });
 
     await teamRepository.save([engineeringTeam, salesTeam, hrTeam]);
-    console.log('✅ Teams created');
+
+    // Create sub-teams
+    const frontendTeam = teamRepository.create({
+      name: 'Frontend Team',
+      description: 'Frontend development and UI/UX',
+      parentTeamId: engineeringTeam.id,
+    });
+    const backendTeam = teamRepository.create({
+      name: 'Backend Team',
+      description: 'Backend services and APIs',
+      parentTeamId: engineeringTeam.id,
+    });
+    const enterpriseSalesTeam = teamRepository.create({
+      name: 'Enterprise Sales',
+      description: 'Large enterprise accounts',
+      parentTeamId: salesTeam.id,
+    });
+
+    await teamRepository.save([frontendTeam, backendTeam, enterpriseSalesTeam]);
+    console.log('✅ Teams and sub-teams created');
 
     // Create CEO (no manager)
     const ceo = employeeRepository.create({
@@ -125,7 +145,6 @@ async function seed() {
       email: 'michael.chen@company.com',
       phone: '555-0002',
       managerId: ceo.id,
-      teamId: engineeringTeam.id,
       hireDate: new Date('2020-03-01'),
       salary: 200000,
       status: EmploymentStatus.ACTIVE,
@@ -145,7 +164,6 @@ async function seed() {
       email: 'emily.rodriguez@company.com',
       phone: '555-0003',
       managerId: cto.id,
-      teamId: engineeringTeam.id,
       hireDate: new Date('2021-05-15'),
       salary: 150000,
       status: EmploymentStatus.ACTIVE,
@@ -172,7 +190,6 @@ async function seed() {
       email: 'david.kim@company.com',
       phone: '555-0004',
       managerId: engManager.id,
-      teamId: engineeringTeam.id,
       hireDate: new Date('2021-08-01'),
       salary: 130000,
       status: EmploymentStatus.ACTIVE,
@@ -186,7 +203,6 @@ async function seed() {
       email: 'lisa.wang@company.com',
       phone: '555-0005',
       managerId: engManager.id,
-      teamId: engineeringTeam.id,
       hireDate: new Date('2022-01-10'),
       salary: 110000,
       status: EmploymentStatus.ACTIVE,
@@ -200,7 +216,6 @@ async function seed() {
       email: 'james.taylor@company.com',
       phone: '555-0006',
       managerId: engManager.id,
-      teamId: engineeringTeam.id,
       hireDate: new Date('2023-06-01'),
       salary: 85000,
       status: EmploymentStatus.ACTIVE,
@@ -228,7 +243,6 @@ async function seed() {
       email: 'robert.martinez@company.com',
       phone: '555-0007',
       managerId: ceo.id,
-      teamId: salesTeam.id,
       hireDate: new Date('2020-06-01'),
       salary: 180000,
       status: EmploymentStatus.ACTIVE,
@@ -248,7 +262,6 @@ async function seed() {
       email: 'amanda.brown@company.com',
       phone: '555-0008',
       managerId: salesVP.id,
-      teamId: salesTeam.id,
       hireDate: new Date('2021-03-15'),
       salary: 95000,
       status: EmploymentStatus.ACTIVE,
@@ -262,7 +275,6 @@ async function seed() {
       email: 'kevin.davis@company.com',
       phone: '555-0009',
       managerId: salesVP.id,
-      teamId: salesTeam.id,
       hireDate: new Date('2022-09-01'),
       salary: 75000,
       status: EmploymentStatus.ACTIVE,
@@ -279,7 +291,6 @@ async function seed() {
       email: 'jessica.wilson@company.com',
       phone: '555-0010',
       managerId: ceo.id,
-      teamId: hrTeam.id,
       hireDate: new Date('2020-04-01'),
       salary: 140000,
       status: EmploymentStatus.ACTIVE,
@@ -303,7 +314,6 @@ async function seed() {
       email: 'nicole.anderson@company.com',
       phone: '555-0011',
       managerId: hrDirector.id,
-      teamId: hrTeam.id,
       hireDate: new Date('2021-11-01'),
       salary: 65000,
       status: EmploymentStatus.ACTIVE,
@@ -312,6 +322,46 @@ async function seed() {
     await employeeRepository.save(hrCoordinator);
 
     console.log('✅ Employees created');
+
+    // Create team memberships using junction table
+    const membershipRepository = AppDataSource.getRepository(EmployeeTeamMembership);
+
+    // Engineering team memberships
+    const engineeringMemberships = membershipRepository.create([
+      { employeeId: cto.id, teamId: engineeringTeam.id },
+      { employeeId: engManager.id, teamId: engineeringTeam.id },
+      { employeeId: engineer1.id, teamId: engineeringTeam.id },
+      { employeeId: engineer2.id, teamId: engineeringTeam.id },
+      { employeeId: engineer3.id, teamId: engineeringTeam.id },
+    ]);
+
+    // Sales team memberships
+    const salesMemberships = membershipRepository.create([
+      { employeeId: salesVP.id, teamId: salesTeam.id },
+      { employeeId: salesRep1.id, teamId: salesTeam.id },
+      { employeeId: salesRep2.id, teamId: salesTeam.id },
+    ]);
+
+    // HR team memberships
+    const hrMemberships = membershipRepository.create([
+      { employeeId: hrDirector.id, teamId: hrTeam.id },
+      { employeeId: hrCoordinator.id, teamId: hrTeam.id },
+    ]);
+
+    // Cross-functional memberships
+    const crossFunctionalMemberships = membershipRepository.create([
+      { employeeId: hrCoordinator.id, teamId: engineeringTeam.id }, // HR supports Engineering
+      { employeeId: salesVP.id, teamId: hrTeam.id }, // Sales VP works with HR
+    ]);
+
+    await membershipRepository.save([
+      ...engineeringMemberships,
+      ...salesMemberships,
+      ...hrMemberships,
+      ...crossFunctionalMemberships,
+    ]);
+    console.log('✅ Team memberships created');
+
     console.log('\n🎉 Database seeded successfully!');
     console.log('\n📋 Test Credentials:');
     console.log('Admin: admin@hris.com / admin123');
