@@ -18,14 +18,7 @@ export const teamService = {
   },
 
   async update(id: string, team: Partial<Team>): Promise<Team> {
-    console.log('=== FRONTEND UPDATE TEAM ===');
-    console.log('Team ID:', id);
-    console.log('Update data:', JSON.stringify(team, null, 2));
-    console.log('parentTeamId value:', team.parentTeamId);
-    console.log('parentTeamId type:', typeof team.parentTeamId);
     const response = await api.put<Team>(`/teams/${id}`, team);
-    console.log('=== UPDATE RESPONSE ===');
-    console.log('Response data:', JSON.stringify(response.data, null, 2));
     return response.data;
   },
 

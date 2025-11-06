@@ -91,19 +91,6 @@ export class TeamsService {
     const team = await this.findOne(id);
     const oldData = { ...team };
 
-    console.log('=== UPDATE TEAM DEBUG ===');
-    console.log('Team ID:', id);
-    console.log('Update DTO:', JSON.stringify(updateTeamDto, null, 2));
-    console.log('Old parentTeamId:', team.parentTeamId);
-    console.log('Has parentTeamId in DTO:', 'parentTeamId' in updateTeamDto);
-    console.log('New parentTeamId value:', updateTeamDto.parentTeamId);
-
-    console.log('Team object before save:', {
-      id: team.id,
-      name: team.name,
-      parentTeamId: team.parentTeamId,
-    });
-
     // Explicitly handle each field to ensure null and undefined values are properly applied
     // Both null and undefined should update the field (null clears it in the database)
     if (updateTeamDto.name !== undefined) {
@@ -121,17 +108,9 @@ export class TeamsService {
       team.parentTeamId = updateTeamDto.parentTeamId;
       // Clear the relation object to force TypeORM to use the ID
       delete team.parentTeam;
-      console.log('Setting parentTeamId to:', updateTeamDto.parentTeamId);
     }
 
     const updatedTeam = await this.teamsRepository.save(team);
-
-    console.log('Team object after save:', {
-      id: updatedTeam.id,
-      name: updatedTeam.name,
-      parentTeamId: updatedTeam.parentTeamId,
-    });
-    console.log('=== END UPDATE DEBUG ===');
 
     await this.createAuditLog(userId, AuditAction.UPDATE, id, {
       old: oldData,

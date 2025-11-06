@@ -140,11 +140,6 @@ const Teams: React.FC = () => {
       parentTeamId: formData.parentTeamId || null,
     };
 
-    console.log('=== HANDLE SUBMIT ===');
-    console.log('Form data:', formData);
-    console.log('Prepared data:', data);
-    console.log('Editing team:', editingTeam?.id);
-
     if (editingTeam) {
       updateMutation.mutate({ id: editingTeam.id, data });
     } else {
